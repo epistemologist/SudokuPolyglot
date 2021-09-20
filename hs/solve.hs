@@ -52,7 +52,14 @@ getSolution board = getSolutionHelper (solveBoard board)
         getSolutionHelper [] = Nothing
         getSolutionHelper (x:xs) = Just x
 
-board_example :: Board
-board_example = [3, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 7, 0, 0, 0, 7, 0, 6, 0, 3, 0, 5, 0, 0, 0, 7, 0, 0, 0, 9, 0, 8, 0, 9, 0, 0, 0, 2, 0, 0, 0, 4, 0, 1, 0, 8, 0, 0, 0, 5, 0, 0, 0, 9, 0, 4, 0, 3, 0, 1, 0, 0, 0, 7, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 6]
+reprBoard :: Board -> String
+reprBoard board = foldr1 (++) [(foldl (++) "" (map show r)) ++ "\n" | r <- rows]
+    where rows = [ [board !! (9*y+x) | x <- [0..8]] | y <- [0..8] ]
 
 
+main = do
+    fileContents <- readFile "../sudoku_puzzles"
+    let boards = map (\r -> map (read . pure :: Char -> Int) r) $
+                 words $ fileContents
+    let sols = map (\board -> reprBoard (fromJust (getSolution board)) ++ "\n") boards
+    mapM_ putStr sols
