@@ -54,11 +54,13 @@ vector<int> solve(vector<int> board) {
     return {};
 }
 
+
 int main() {
     ifstream file;
     string line;
     file.open("../sudoku_puzzles");
     while (getline(file, line)) {
+        cout << line << endl;
         print_board(solve(get_board(line)));
     }
 }
