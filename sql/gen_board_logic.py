@@ -42,4 +42,4 @@ for i, box in enumerate(BOX):
     code += " and ".join(terms) + "\n"
 
 
-print(code)
+print("\n" + code[:-6])

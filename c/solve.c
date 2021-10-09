@@ -1,79 +1,96 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 
-bool legal_counts(int* counts) {
-    int max = 0;
-    for (int i = 1; i < 10; i++) {
-        max = (max < counts[i]) ? counts[i] : max;
-    }
-    return (max <= 1);
+#define get_index(x, y) (9*(x)+(y))
+
+struct board {
+    int board[81];
+};
+
+static bool legal_counts(int *counts) {
+    for (int i = 1; i < 10; i++)
+        if (counts[i] > 1)
+            return false;
+    return true;
 }
 
-int get_index(int x, int y) {
-    return 9*x+y;
-}
-
-bool legal_board(int* board) {
+static bool legal_board(int *board) {
     for (int i = 0; i < 9; i++) {
-        int row_digit_counts[10];
-        int col_digit_counts[10];
-        memset(row_digit_counts, 0, sizeof(row_digit_counts));
-        memset(col_digit_counts, 0, sizeof(col_digit_counts));
+        int row_digit_counts[10] = {0};
+        int col_digit_counts[10] = {0};
+
         for (int j = 0; j < 9; j++) {
             row_digit_counts[board[get_index(i,j)]]++;
             col_digit_counts[board[get_index(j,i)]]++;
         }
-        if (!legal_counts(row_digit_counts) || !legal_counts(col_digit_counts)) {
+
+        if (!legal_counts(row_digit_counts) || !legal_counts(col_digit_counts))
             return 0;
-        }
     }
+
     for (int i = 0; i < 9; i++) {
-        int box_digit_counts[10];
-        memset(box_digit_counts, 0, sizeof(box_digit_counts));
-        for (int j = 0; j < 81; j++) {
-            if (3*(j/27)+(j%9)/3 == i) box_digit_counts[board[j]]++;
-        }
-        if (!legal_counts(box_digit_counts)) return 0;
+        int box_digit_counts[10] = {0};
+
+        for (int j = 0; j < 81; j++)
+            if (3*(j/27)+(j%9)/3 == i)
+                box_digit_counts[board[j]]++;
+        if (!legal_counts(box_digit_counts))
+            return 0;
     }
+
     return 1;
 }
 
-int get_empty_position(int* board) {
-    for (int i = 0; i < 81; i++) {
-        if (board[i] == 0) return i;
-    }
+static int get_empty_position(int *board) {
+    for (int i = 0; i < 81; i++)
+        if (board[i] == 0)
+            return i;
     return -1;
 }
 
-struct SolveState {
-    int board[81];
-    bool success;
-};
-
-struct SolveState solve(struct SolveState* state) {
-    int current_pos = get_empty_position(state->board);
-    int board_copy[81];
-    memcpy(&board_copy, state->board, sizeof(board_copy));
-    if (current_pos == -1) return *state;
+static bool solve(struct board *board) {
+    int current_pos = get_empty_position(board->board);
+    if (current_pos == -1) {
+        return true;
+    }
     for (int d = 1; d <= 9; d++) {
-        (state->board)[current_pos] = d;
-        if (legal_board(state->board)) {
-            struct SolveState curr_state = {state->board, 0};
-            struct SolveState temp = solve(&curr_state);
-            if (temp.success) return temp;
+        board->board[current_pos] = d;
+        if (legal_board(board->board)) {
+            struct board temp = *board;
+            if (solve(&temp)) {
+                *board = temp;
+                return true;
+            }
         }
     }
-    struct SolveState failed_state = {state->board, 1};
-    return failed_state;
+    return false;
+}
+
+static void print(struct board *board) {
+    for (int i = 0; i < 9; i++) {
+        for (int j = 0; j < 9; j++) {
+            printf("%d", board->board[get_index(i,j)]);
+        }
+        printf("\n");
+    }
 }
 
 int main() {
-    int board[] = {3, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 7, 0, 0, 0, 7, 0, 6, 0, 3, 0, 5, 0, 0, 0, 7, 0, 0, 0, 9, 0, 8, 0, 9, 0, 0, 0, 2, 0, 0, 0, 4, 0, 1, 0, 8, 0, 0, 0, 5, 0, 0, 0, 9, 0, 4, 0, 3, 0, 1, 0, 0, 0, 7, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 6};
-    struct SolveState s = {board, 0};
-    struct SolveState temp = solve(&s);
-    for (int i = 0; i < 81; i++) {
-        printf("%d", temp.board[i]);
+    struct board board;
+    FILE * fp;
+    char * line = NULL;
+    size_t len = 0;
+    int puzzle[81] = {0};
+    fp = fopen("../sudoku_puzzles", "r");
+    if (fp == NULL) exit(EXIT_FAILURE);
+    while (getline(&line, &len, fp) != -1) {
+        for (int i = 0; i < 81; i++) puzzle[i] = line[i] - '0';
+        memcpy(board.board, puzzle, sizeof(puzzle));
+        solve(&board);
+        print(&board);
+        printf("\n");
     }
     return 0;
 }
